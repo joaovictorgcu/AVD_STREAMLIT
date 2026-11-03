@@ -12,7 +12,7 @@ Os rascunhos de layout ficam na pasta [entregas/](../entregas/) (veja [entregas/
 ## Neste projeto
 
 - [layout-skeleton-prompt.md](layout-skeleton-prompt.md): template preenchido com o contexto do clima de Brasília.
-- [historico-prompts.md](historico-prompts.md): o uso de IA organizado por etapa (exploração, EDA, correlações,
+- [prompts-utilizados.md](prompts-utilizados.md): o uso de IA organizado por etapa (exploração, EDA, correlações,
   planejamento, público-alvo, KPIs, implementação, revisão visual, testes e revisão final).
 - [declaracao-uso-ia.md](declaracao-uso-ia.md): ferramenta, prompt enviado e o que foi aceito/modificado/rejeitado
   (a completar e assinar).

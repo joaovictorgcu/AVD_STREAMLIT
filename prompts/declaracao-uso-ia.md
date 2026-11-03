@@ -25,7 +25,7 @@ Um único pedido abrangente (copiado abaixo) para o Claude Code, que:
    encontrados;
 5. organizou o trabalho em commits por etapa.
 
-O arquivo [historico-prompts.md](historico-prompts.md) organiza esse trabalho em etapas, em forma de prompts em
+O arquivo [prompts-utilizados.md](prompts-utilizados.md) organiza esse trabalho em etapas, em forma de prompts em
 primeira pessoa; ele **não** é a transcrição de conversas separadas.
 
 Os trechos de código feitos com IA estão marcados com `# [IA]` no topo de cada arquivo.
