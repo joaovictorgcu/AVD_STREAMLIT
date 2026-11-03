@@ -6,6 +6,7 @@ Artefatos de entrega que não são sobre uso de IA (isso fica em [`prompts/`](..
 |-------------------------------|-----------|-----------------------------------------------------------------------------------------------|
 | `rascunho-dashboard1.jpg`/`.png`     | Aula 21   | Foto do rascunho do layout do Dashboard 1, feito antes de codar                               |
 | `rascunho-dashboard2.jpg`/`.png`     | Aula 22   | Mesma ideia, para o Dashboard 2 — desenhado só depois de definir widgets, variáveis e métricas |
+| `rascunhos.md`                | Aula 22   | Descrição de cada elemento dos dois rascunhos e do que mudou na implementação                 |
 | `justificativa-metricas.md`   | Aula 22   | Por que cada métrica/KPI do Dashboard 2 foi escolhida e o que ela comunica ao público-alvo     |
 
 ## Checklist — Aula 21
