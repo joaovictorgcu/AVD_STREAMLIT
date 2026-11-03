@@ -42,14 +42,17 @@ NIVEIS_UMIDADE = ["Atenção (21–30%)", "Alerta (12–20%)", "Emergência (<12
 CORES_NIVEIS = ["#fab219", "#ec835a", "#d03b3b"]
 
 
-def numero(valor, casas: int = 0) -> str:
-    """1234567.8 → '1.234.567,8'. NaN/None → '—'."""
+def numero(valor, casas: int = 0, sinal: bool = False) -> str:
+    """1234567.8 → '1.234.567,8'. NaN/None → '—'. Com sinal=True, positivos ganham '+'."""
     if valor is None or (isinstance(valor, float) and math.isnan(valor)):
         return "—"
     texto = f"{valor:,.{casas}f}".replace(",", "_").replace(".", ",").replace("_", ".")
+    zero = set(texto.lstrip("-")) <= set("0,.")
     # Evita "-0" / "-0,00" quando o valor arredondado é zero
-    if texto.startswith("-") and set(texto[1:]) <= set("0,."):
+    if texto.startswith("-") and zero:
         texto = texto[1:]
+    if sinal and not texto.startswith("-") and not zero:
+        texto = "+" + texto
     return texto
 
 

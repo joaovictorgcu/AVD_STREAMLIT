@@ -6,7 +6,7 @@ Rodar localmente:  streamlit run app.py
 
 import streamlit as st
 
-from src import dashboard1
+from src import dashboard1, dashboard2
 from src.data_loader import load_daily, load_data
 
 st.set_page_config(
@@ -34,4 +34,4 @@ if aba_lab.open:
 
 if aba_kpi.open:
     with aba_kpi:
-        st.info("Dashboard 2 em construção.")
+        dashboard2.render(df_horario, df_diario)
