@@ -1,0 +1,15 @@
+# App (o Streamlit Community Cloud instala tudo deste arquivo)
+# 1.66+: st.tabs com on_change/.open, st.metric com chart_data/delta_description e st.container(horizontal=True)
+streamlit>=1.66,<2.0
+pandas>=2.2,<4.0
+numpy>=2.0,<3.0
+scipy>=1.14,<2.0      # exigido pelo pandas para a correlação de Spearman
+# altair já vem com o streamlit
+
+# Notebooks (EDA e exportação do dataset tratado)
+matplotlib>=3.9,<4.0
+ipykernel>=6.29,<8.0
+requests>=2.31,<3.0   # só para a célula opcional que baixa os dados do INMET
+
+# Testes (python -m pytest)
+pytest>=8.0,<10.0
