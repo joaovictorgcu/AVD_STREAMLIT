@@ -15,6 +15,7 @@ class Variavel:
     unidade: str
     descricao: str
     casas: int = 1
+    curto: str = ""  # nome curto para eixos apertados (heatmap)
 
     @property
     def rotulo(self) -> str:
@@ -22,26 +23,27 @@ class Variavel:
 
 
 HORARIAS = [
-    Variavel("temperatura", "Temperatura", "°C", "Temperatura do ar (bulbo seco) na hora."),
-    Variavel("umidade", "Umidade relativa", "%", "Umidade relativa do ar na hora.", 0),
-    Variavel("precipitacao", "Precipitação", "mm", "Chuva acumulada na hora."),
+    Variavel("temperatura", "Temperatura", "°C", "Temperatura do ar (bulbo seco) na hora.", curto="Temp."),
+    Variavel("umidade", "Umidade relativa", "%", "Umidade relativa do ar na hora.", 0, "Umidade"),
+    Variavel("precipitacao", "Precipitação", "mm", "Chuva acumulada na hora.", curto="Chuva"),
     Variavel(
         "ponto_orvalho",
         "Ponto de orvalho",
         "°C",
         "Temperatura em que o ar saturaria (fórmula de Magnus). Mede o vapor d'água absoluto.",
+        curto="Orvalho",
     ),
 ]
 
 DIARIAS = [
-    Variavel("temp_media", "Temperatura média", "°C", "Média das temperaturas horárias do dia."),
-    Variavel("temp_max", "Temperatura máxima", "°C", "Maior temperatura horária do dia."),
-    Variavel("temp_min", "Temperatura mínima", "°C", "Menor temperatura horária do dia."),
-    Variavel("amplitude_termica", "Amplitude térmica", "°C", "Máxima menos mínima do dia."),
-    Variavel("umidade_media", "Umidade média", "%", "Média da umidade relativa no dia.", 0),
-    Variavel("umidade_min", "Umidade mínima", "%", "Menor umidade relativa horária do dia.", 0),
-    Variavel("chuva_total", "Chuva do dia", "mm", "Soma da precipitação horária do dia."),
-    Variavel("orvalho_medio", "Ponto de orvalho médio", "°C", "Média do ponto de orvalho no dia."),
+    Variavel("temp_media", "Temperatura média", "°C", "Média das temperaturas horárias do dia.", curto="T média"),
+    Variavel("temp_max", "Temperatura máxima", "°C", "Maior temperatura horária do dia.", curto="T máx."),
+    Variavel("temp_min", "Temperatura mínima", "°C", "Menor temperatura horária do dia.", curto="T mín."),
+    Variavel("amplitude_termica", "Amplitude térmica", "°C", "Máxima menos mínima do dia.", curto="Amplitude"),
+    Variavel("umidade_media", "Umidade média", "%", "Média da umidade relativa no dia.", 0, "UR média"),
+    Variavel("umidade_min", "Umidade mínima", "%", "Menor umidade relativa horária do dia.", 0, "UR mín."),
+    Variavel("chuva_total", "Chuva do dia", "mm", "Soma da precipitação horária do dia.", curto="Chuva"),
+    Variavel("orvalho_medio", "Ponto de orvalho médio", "°C", "Média do ponto de orvalho no dia.", curto="Orvalho"),
 ]
 
 GRANULARIDADES = {"Horária": HORARIAS, "Diária": DIARIAS}

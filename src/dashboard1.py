@@ -26,28 +26,34 @@ ALTURA_HIST = 210
 # ====================================================================== gráficos
 
 
-def grafico_heatmap(corr: pd.DataFrame, rotulos: dict[str, str], metodo: str) -> alt.Chart:
+def grafico_heatmap(corr: pd.DataFrame, rotulos: dict[str, str], curtos: dict[str, str], metodo: str) -> alt.Chart:
     dados = est.correlacao_longa(corr)
-    dados["nome_linha"] = dados["linha"].map(rotulos)
-    dados["nome_coluna"] = dados["coluna"].map(rotulos)
+    # Eixos com nome curto (cabe até no celular); o nome completo aparece no tooltip
+    dados["nome_linha"] = dados["linha"].map(curtos)
+    dados["nome_coluna"] = dados["coluna"].map(curtos)
+    dados["completo_linha"] = dados["linha"].map(rotulos)
+    dados["completo_coluna"] = dados["coluna"].map(rotulos)
     dados["texto"] = dados["r"].map(lambda r: "—" if pd.isna(r) else numero(r, 2))
     dados["forca"] = dados["r"].map(est.forca_correlacao)
-    ordem = [rotulos[c] for c in corr.columns]
+    ordem = [curtos[c] for c in corr.columns]
     simbolo = "r" if metodo == "pearson" else "ρ"
 
     base = alt.Chart(dados).encode(
-        x=alt.X("nome_coluna:N", sort=ordem, title=None, axis=alt.Axis(labelAngle=-30, labelLimit=140)),
+        x=alt.X(
+            "nome_coluna:N", sort=ordem, title=None,
+            axis=alt.Axis(labelAngle=0 if len(ordem) <= 5 else -40, labelOverlap=False, labelPadding=6),
+        ),
         y=alt.Y("nome_linha:N", sort=ordem, title=None, axis=alt.Axis(labelLimit=160)),
     )
-    celulas = base.mark_rect(cornerRadius=3, stroke="white", strokeWidth=2).encode(
+    celulas = base.mark_rect(cornerRadius=3).encode(
         color=alt.Color(
             "r:Q",
-            scale=alt.Scale(domain=[-1, 0, 1], range=DIVERGENTE),
+            scale=alt.Scale(domain=[-1, 0, 1], range=DIVERGENTE, interpolate="rgb"),
             legend=alt.Legend(title=simbolo, orient="right", gradientLength=160),
         ),
         tooltip=[
-            alt.Tooltip("nome_linha:N", title="Variável"),
-            alt.Tooltip("nome_coluna:N", title="com"),
+            alt.Tooltip("completo_linha:N", title="Variável"),
+            alt.Tooltip("completo_coluna:N", title="com"),
             alt.Tooltip("texto:N", title=simbolo),
             alt.Tooltip("forca:N", title="Força"),
         ],
@@ -57,16 +63,18 @@ def grafico_heatmap(corr: pd.DataFrame, rotulos: dict[str, str], metodo: str) ->
         color=alt.condition("abs(datum.r) > 0.55", alt.value("white"), alt.value("#0b0b0b")),
     )
     altura = max(56 * len(ordem), 140)
-    return em_portugues((celulas + textos).properties(height=altura))
+    # padding à esquerda: sem ele o 1º caractere do rótulo do eixo y era cortado em telas estreitas
+    return em_portugues((celulas + textos).properties(height=altura, padding={"left": 12, "top": 4, "right": 4, "bottom": 4}))
 
 
 def grafico_histograma(serie: pd.Series, nome: str, unidade: str, casas: int, bins: int, log: bool) -> alt.Chart:
-    tabela = est.histograma(serie, bins)
+    tabela = est.histograma(serie, bins, inteiro=casas == 0 and bool((serie.dropna() % 1 == 0).all()))
     mediana = serie.median()
     escala_y = alt.Scale(type="symlog") if log else alt.Scale()
     barras = (
         alt.Chart(tabela)
-        .mark_bar(color=COR_PRINCIPAL, binSpacing=1, cornerRadiusTopLeft=2, cornerRadiusTopRight=2)
+        # Sem cornerRadius: no Vega-Lite ele faz as barras com bin="binned" sumirem
+        .mark_bar(color=COR_PRINCIPAL, binSpacing=1)
         .encode(
             x=alt.X("inicio:Q", bin="binned", title=unidade, scale=alt.Scale(zero=False, nice=False)),
             x2="fim:Q",
@@ -176,7 +184,9 @@ def tabela_descritiva(desc: pd.DataFrame, catalogo: dict) -> pd.DataFrame:
             "curtose": "Curtose", "forma": "Forma", "outliers": "Outliers (IQR)", "pct_outliers": "% outliers",
         }
     )
-    return tabela.drop(columns=["iqr_nulo"], errors="ignore")
+    ordem = ["Variável", "N", "Ausentes", "Média", "Mediana", "Desvio-padrão", "Mín.", "Q1", "Q3", "Máx.",
+             "Assimetria", "Forma", "Curtose", "Outliers (IQR)", "% outliers"]
+    return tabela.reindex(columns=ordem)
 
 
 # ====================================================================== página
@@ -320,7 +330,7 @@ def render(df_horario: pd.DataFrame, df_diario: pd.DataFrame) -> None:
         else:
             corr = est.matriz_correlacao(filtrado, variaveis, metodo)
             st.altair_chart(
-                grafico_heatmap(corr, rotulos, metodo),
+                grafico_heatmap(corr, rotulos, {c: catalogo[c].curto or catalogo[c].nome for c in variaveis}, metodo),
                 width="stretch",
                 alt=f"Heatmap da correlação de {metodo.title()} entre as variáveis selecionadas",
             )
@@ -358,9 +368,11 @@ def render(df_horario: pd.DataFrame, df_diario: pd.DataFrame) -> None:
                 width="stretch",
                 alt=f"Histograma de {v.nome}",
             )
+            zeros = (filtrado[col].dropna() == 0).mean()
+            nota_zeros = f" · {percentual(zeros, 0)} dos registros = 0" if zeros >= 0.5 else ""
             st.caption(
                 f"Média {numero(linha['media'], v.casas)} · mediana {numero(linha['mediana'], v.casas)} {v.unidade} · "
-                f"assimetria {numero(linha['assimetria'], 2)} ({linha['forma']})"
+                f"assimetria {numero(linha['assimetria'], 2)} ({linha['forma']}){nota_zeros}"
             )
     st.caption("Linha cinza = mediana. Passe o mouse nas barras para ver a faixa e a contagem.")
 
@@ -371,14 +383,16 @@ def render(df_horario: pd.DataFrame, df_diario: pd.DataFrame) -> None:
             tabela_descritiva(desc, catalogo),
             hide_index=True,
             width="stretch",
+            # "localized" segue o idioma do navegador (vírgula decimal para quem usa pt-BR)
             column_config={
-                c: st.column_config.NumberColumn(format="%.2f")
-                for c in ["Média", "Mediana", "Desvio-padrão", "Mín.", "Q1", "Q3", "Máx.", "Assimetria", "Curtose"]
+                c: st.column_config.NumberColumn(format="localized")
+                for c in ["N", "Ausentes", "Média", "Mediana", "Desvio-padrão", "Mín.", "Q1", "Q3", "Máx.",
+                          "Assimetria", "Curtose", "Outliers (IQR)"]
             }
             | {
                 "% outliers": st.column_config.NumberColumn(format="percent"),
-                "N": st.column_config.NumberColumn(format="localized"),
-                "Outliers (IQR)": st.column_config.NumberColumn(format="localized"),
+                "Variável": st.column_config.TextColumn(pinned=True),
+                "Forma": st.column_config.TextColumn(width="medium"),
             },
         )
         iqr_nulo = desc["iqr_nulo"].eq(True) if "iqr_nulo" in desc else pd.Series(False, index=desc.index)

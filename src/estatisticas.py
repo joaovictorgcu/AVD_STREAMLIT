@@ -125,8 +125,12 @@ def pares_ordenados(corr: pd.DataFrame) -> pd.DataFrame:
 # ------------------------------------------------------------------ agregações para gráficos
 
 
-def histograma(serie: pd.Series, bins: int = 30) -> pd.DataFrame:
-    """Contagens por faixa (início, fim, contagem, % do total)."""
+def histograma(serie: pd.Series, bins: int = 30, inteiro: bool = False) -> pd.DataFrame:
+    """Contagens por faixa (início, fim, contagem, % do total).
+
+    Com inteiro=True (ex.: umidade, medida em % inteiros), as faixas têm largura inteira e começam em x,5,
+    para cada valor cair sempre no mesmo número de faixas — evita o "pente" de barras altas e baixas.
+    """
     s = serie.dropna()
     if s.empty:
         return pd.DataFrame(columns=["inicio", "fim", "contagem", "pct"])
@@ -134,6 +138,10 @@ def histograma(serie: pd.Series, bins: int = 30) -> pd.DataFrame:
     if minimo == maximo:  # variável constante: uma barra só, com largura simbólica
         bordas = np.array([minimo - 0.5, maximo + 0.5])
         contagens = np.array([s.size])
+    elif inteiro:
+        largura = max(1, int(np.ceil((maximo - minimo + 1) / bins)))
+        bordas = np.arange(minimo - 0.5, maximo + largura + 0.5, largura)
+        contagens, bordas = np.histogram(s, bins=bordas)
     else:
         contagens, bordas = np.histogram(s, bins=bins)
     tabela = pd.DataFrame({"inicio": bordas[:-1], "fim": bordas[1:], "contagem": contagens})

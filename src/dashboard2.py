@@ -42,7 +42,7 @@ def grafico_mapa_mes_hora(tabela: pd.DataFrame, meses: list[int]) -> alt.Chart:
     ordem_meses = [MESES_CURTOS[m - 1] for m in sorted(meses)]
     return em_portugues(
         alt.Chart(tabela)
-        .mark_rect(cornerRadius=2, stroke="white", strokeWidth=1)
+        .mark_rect(cornerRadius=2)
         .encode(
             x=alt.X("hora:O", title="Hora local", axis=alt.Axis(labelAngle=0, labelExpr="datum.value + 'h'")),
             y=alt.Y("mes_nome:N", sort=ordem_meses, title=None),
@@ -71,7 +71,7 @@ def grafico_niveis_mes(tabela: pd.DataFrame, meses: list[int], titulo_y: str) ->
     tabela["ordem_nivel"] = tabela["nivel"].map(NIVEIS_UMIDADE.index)
     return em_portugues(
         alt.Chart(tabela)
-        .mark_bar(stroke="white", strokeWidth=1)
+        .mark_bar()
         .encode(
             x=alt.X("mes_nome:N", sort=[MESES_CURTOS[m - 1] for m in sorted(meses)], title=None,
                     axis=alt.Axis(labelAngle=0)),
@@ -79,7 +79,7 @@ def grafico_niveis_mes(tabela: pd.DataFrame, meses: list[int], titulo_y: str) ->
             color=alt.Color(
                 "nivel:N",
                 scale=alt.Scale(domain=NIVEIS_UMIDADE, range=CORES_NIVEIS),
-                legend=alt.Legend(title="Nível do dia (UR mínima)", orient="top", direction="horizontal"),
+                legend=alt.Legend(title="Nível do dia (UR mínima)", orient="top", columns=2, labelLimit=180),
             ),
             order=alt.Order("ordem_nivel:Q"),
             tooltip=[
@@ -102,7 +102,7 @@ def grafico_anual(por_ano: pd.DataFrame, foco) -> alt.Chart:
         alt.Chart(tabela)
         .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
         .encode(
-            x=alt.X("ano_txt:O", title=None, axis=alt.Axis(labelAngle=0)),
+            x=alt.X("ano_txt:O", title=None, axis=alt.Axis(labelAngle=0), scale=alt.Scale(paddingInner=0.35)),
             y=alt.Y("dias_ar_seco:Q", title="Dias com UR mínima ≤ 30%"),
             color=alt.Color(
                 "destaque:N", scale=alt.Scale(domain=["foco", "contexto"], range=[COR_PRINCIPAL, COR_CONTEXTO]),
@@ -122,13 +122,7 @@ def grafico_anual(por_ano: pd.DataFrame, foco) -> alt.Chart:
         .mark_rule(color=COR_REFERENCIA, strokeWidth=1.5)
         .encode(y="media:Q", tooltip=[alt.Tooltip("media:Q", title="Média 2014–2023", format=",.1f")])
     )
-    # Rótulo da média encostado na borda direita do gráfico
-    rotulo = (
-        alt.Chart(pd.DataFrame({"media": [media], "texto": [f"média {numero(media, 1)}"]}))
-        .mark_text(align="right", dx=-2, dy=-7, color=COR_REFERENCIA, fontSize=11)
-        .encode(y="media:Q", x=alt.value("width"), text="texto:N")
-    )
-    return em_portugues((barras + regra + rotulo).properties(height=290))
+    return em_portugues((barras + regra).properties(height=290))
 
 
 def grafico_ciclo(tabela: pd.DataFrame) -> alt.Chart:
@@ -182,15 +176,16 @@ def mostra_kpis(diario, horario, por_ano, foco, recorte):
     media = por_ano[["dias_ar_seco", "dias_alerta", "pct_horas_ar_seco", "maior_estiagem"]].mean()
     comparar = foco != TODOS
     descricao = "vs. média 2014–2023" if comparar else None
-    sufixo_dias = "dias" if comparar else "dias/ano"
+    rotulo_ano = "" if comparar else "/ano"
 
     periodo_estiagem = (
         f"de {ini:%d/%m/%Y} a {fim:%d/%m/%Y}" if estiagem and ini is not None else "sem dias sem chuva no recorte"
     )
-    with st.container(horizontal=True):
+    c1, c2, c3, c4, c5 = st.columns(5)
+    with c1:
         st.metric(
-            "Dias com ar seco",
-            f"{numero(dias_seco, 0 if comparar else 1)} {sufixo_dias}",
+            f"Dias secos{rotulo_ano}",
+            numero(dias_seco, 0 if comparar else 1),
             _delta(dias_seco, media["dias_ar_seco"] if comparar else None),
             delta_color="inverse",
             delta_description=descricao,
@@ -200,9 +195,10 @@ def mostra_kpis(diario, horario, por_ano, foco, recorte):
             help="Dias cuja umidade relativa mínima ficou em 30% ou menos (estado de atenção ou pior). "
             f"Recorte: {recorte.lower()}. Minigráfico: um valor por ano, 2014–2023.",
         )
+    with c2:
         st.metric(
-            "Dias em alerta",
-            f"{numero(dias_alerta, 0 if comparar else 1)} {sufixo_dias}",
+            f"Dias em alerta{rotulo_ano}",
+            numero(dias_alerta, 0 if comparar else 1),
             _delta(dias_alerta, media["dias_alerta"] if comparar else None),
             delta_color="inverse",
             delta_description=descricao,
@@ -211,8 +207,9 @@ def mostra_kpis(diario, horario, por_ano, foco, recorte):
             border=True,
             help="Dias com umidade relativa mínima de 20% ou menos (alerta ou emergência).",
         )
+    with c3:
         st.metric(
-            "Horas com UR ≤ 30%",
+            "Horas de ar seco",
             percentual(pct_horas),
             _delta(pct_horas * 100, media["pct_horas_ar_seco"] * 100 if comparar else None, 1, " p.p."),
             delta_color="inverse",
@@ -222,6 +219,7 @@ def mostra_kpis(diario, horario, por_ano, foco, recorte):
             border=True,
             help="Fração das horas medidas com umidade relativa de 30% ou menos. Diferença em pontos percentuais.",
         )
+    with c4:
         st.metric(
             "Maior estiagem",
             f"{numero(estiagem)} dias",
@@ -234,14 +232,16 @@ def mostra_kpis(diario, horario, por_ano, foco, recorte):
             help="Maior sequência de dias consecutivos com chuva abaixo de 1 mm "
             f"({periodo_estiagem}). Dia sem dado interrompe a sequência.",
         )
+    with c5:
         st.metric(
-            "Hora mais seca do dia",
+            "Hora mais seca",
             f"{hora}h" if hora is not None else "—",
-            f"{percentual(pct_hora)} das horas ≤ 30%" if hora is not None else None,
+            f"{percentual(pct_hora)} das horas" if hora is not None else None,
             delta_color="off",
             delta_arrow="off",
             border=True,
-            help="Hora local em que a umidade fica em 30% ou menos com mais frequência no recorte. "
+            help="Hora local em que a umidade fica em 30% ou menos com mais frequência no recorte "
+            "(o número abaixo é a fração dessas horas com UR ≤ 30%). "
             "É a janela a evitar para esforço físico ao ar livre.",
         )
     return {
@@ -340,7 +340,7 @@ def render(df_horario: pd.DataFrame, df_diario: pd.DataFrame) -> None:
             st.markdown("**Ano a ano** · dias com UR mínima ≤ 30%")
             st.altair_chart(grafico_anual(por_ano, foco), width="stretch",
                             alt="Barras de dias com ar seco por ano, com a média do período")
-            st.caption("Linha cinza = média 2014–2023. " + (
+            st.caption(f"Linha cinza = média 2014–2023 ({numero(por_ano['dias_ar_seco'].mean(), 1)} dias). " + (
                 "Ano em foco destacado em azul." if foco != TODOS else "Escolha um ano no painel lateral para destacá-lo."
             ))
     with col_d:
